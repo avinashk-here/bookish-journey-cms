@@ -1,0 +1,10 @@
+[
+  { "label": "GPT-5",        "value": "gpt-5" },
+  { "label": "GPT-5 Mini",   "value": "gpt-5-mini" },
+  { "label": "GPT-5 Nano",   "value": "gpt-5-nano" },
+  { "label": "GPT-4 Turbo",  "value": "gpt-4-turbo" },
+  { "label": "Sonar",        "value": "sonar" },
+  { "label": "Sonar Pro",    "value": "sonar-pro" },
+  { "label": "Sonar Reasoning Pro", "value": "sonar-reasoning-pro" },
+  { "label": "Sonar Deep Research", "value": "sonar-deep-research" }
+]
