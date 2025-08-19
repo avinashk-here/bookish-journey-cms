@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+// src/components/Cell.js
+import React, { useState, useRef, useEffect } from "react";
 import { Form, Button, Row, Col, Spinner } from "react-bootstrap";
 import models from "../data/models.json";
 import prompts from "../data/prompts.json";
@@ -15,76 +16,94 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
   const [citations, setCitations] = useState([]);
   const timerRef = useRef(null);
   const outputRef = useRef(null);
+  const [savedPrompts, setSavedPrompts] = useState([]);
+  const [showSaveButton, setShowSaveButton] = useState(false);
 
-  // const runAI = async () => {
-  //   setLoading(true);
-  //   setElapsed(0);
+  useEffect(() => {
+    const savedPromptsFromStorage = localStorage.getItem('savedPrompts');
+    if (savedPromptsFromStorage) {
+      setSavedPrompts(JSON.parse(savedPromptsFromStorage));
+    }
+  }, []);
 
-  //   timerRef.current = setInterval(() => {
-  //     setElapsed((prev) => prev + 1);
-  //   }, 1000);
+  useEffect(() => {
+    localStorage.setItem('savedPrompts', JSON.stringify(savedPrompts));
+  }, [savedPrompts]);
 
-  //   try {
-  //     const res = await fetch("http://localhost:5000/api/generate", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ model, prompt, context }),
-  //     });
-  //     const data = await res.json();
-  //     if (data.error) throw new Error(data.error);
-  //     setCitations(data.citations || []);
-  //     //setOutput(`${data.choices[0]?.message?.content || ''}\n\n**Citations**:\n${data.citations.map((citation => `- ${citation}`).join('\n'))},\n`);
-  //      const content = data?.choices?.[0]?.message?.content || '';
-  //      const cites   = Array.isArray(data.citations) ? data.citations.filter(Boolean) : [];
-  //       setOutput(
-  //       content +
-  //       (cites.length ? `\n\n**Citations**:\n${cites.join('\n')}` : '')
-  //     );
-
-  //   } catch (err) {
-  //     setOutput(`Error: ${err.message}`);
-  //   } finally {
-  //     setLoading(false);
-  //     clearInterval(timerRef.current);
-  //   }
-  // };
-
+  useEffect(() => {
+    if (isCustomPrompt) {
+      setShowSaveButton(true);
+    } else {
+      setShowSaveButton(false);
+    }
+  }, [isCustomPrompt]);
 
   const runAI = async () => {
-  setLoading(true);
-  setElapsed(0);
-  timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
+    setLoading(true);
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
 
-  try {
-    const res = await fetch("http://localhost:5000/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, prompt, context }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    try {
+      const res = await fetch("http://localhost:5000/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, prompt, context }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
 
-    // Pick correct text field (Perplexity / OpenAI)
-    const content = data.choices?.[0]?.message?.content || data.content || '';
-    const cites   = Array.isArray(data.citations) ? data.citations.filter(Boolean) : [];
+      const content = data.choices?.[0]?.message?.content || data.content || '';
+      const cites = Array.isArray(data.citations) ? data.citations.filter(Boolean) : [];
 
-    setOutput(
-      content +
-      (cites.length ? `\n\n**Citations**:\n${cites.join('\n')}` : '')
-    );
-  } catch (err) {
-    setOutput(`Error: ${err.message}`);
-  } finally {
-    setLoading(false);
-    clearInterval(timerRef.current);
-  }
-};
+      setOutput(
+        content +
+        (cites.length ? `\n\n**Citations**:\n${cites.join('\n')}` : '')
+      );
+    } catch (err) {
+      setOutput(`Error: ${err.message}`);
+    } finally {
+      setLoading(false);
+      clearInterval(timerRef.current);
+    }
+  };
+
   const copyOutput = () => {
     if (outputRef.current) {
       navigator.clipboard.writeText(outputRef.current.value).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 8000);
       });
+    }
+  };
+
+  const handlePromptChange = (e) => {
+    const value = e.target.value;
+    if (value === '__CUSTOM__') {
+      setIsCustomPrompt(true);
+      setPrompt('');
+      setShowSaveButton(false); // Hide the save button initially
+    } else {
+      setIsCustomPrompt(false);
+      setPrompt(value);
+      setShowSaveButton(false); // Hide the save button
+    }
+  };
+
+  const handleCustomPromptChange = (e) => {
+    setPrompt(e.target.value);
+    if (e.target.value.trim()) {
+      setShowSaveButton(true); // Show the save button if there's text
+    } else {
+      setShowSaveButton(false); // Hide the save button if no text
+    }
+  };
+
+  const savePrompt = () => {
+    if (isCustomPrompt && prompt.trim()) {
+      setSavedPrompts([...savedPrompts, prompt]);
+      setIsCustomPrompt(false); // Reset to use a predefined prompt
+      setPrompt(''); // Clear the custom prompt input
+      setShowSaveButton(false); // Hide the save button
     }
   };
 
@@ -152,31 +171,28 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
           <div className="d-flex gap-2">
             <Form.Select
               value={isCustomPrompt ? '__CUSTOM__' : prompt}
-              onChange={(e) => {
-                if (e.target.value === '__CUSTOM__') {
-                  setIsCustomPrompt(true);
-                  setPrompt('');
-                } else {
-                  setIsCustomPrompt(false);
-                  setPrompt(e.target.value);
-                }
-              }}
+              onChange={handlePromptChange}
             >
               {prompts.map((p) => (
                 <option key={p.value} value={p.value}>
                   {p.label}
                 </option>
               ))}
+              {savedPrompts.map((sp, index) => (
+                <option key={index} value={sp}>
+                  {sp}
+                </option>
+              ))}
               <option value="__CUSTOM__">+ Add prompt</option>
             </Form.Select>
             {isCustomPrompt && (
               <Form.Control
-                  as="textarea"
-                  rows={2}
-                  placeholder="Type your custom prompt…"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                />
+                as="textarea"
+                rows={1}
+                placeholder="type.."
+                value={prompt}
+                onChange={handleCustomPromptChange}
+              />
             )}
           </div>
         </Col>
@@ -198,6 +214,11 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
               "Run"
             )}
           </Button>
+          {showSaveButton && (
+            <Button variant="success" onClick={savePrompt}>
+              Save
+            </Button>
+          )}
         </Col>
       </Row>
     </div>

@@ -1,20 +1,32 @@
 // colabcms/src/App.js
-
 import React, { useState } from "react";
 import Container from "react-bootstrap/Container";
 import TabManager from "./components/TabManager";
+import Login from "./components/Login";
+import { logSheet } from "./utils/sheetUtils";
+
 
 function App() {
-  const [currentTab, setCurrentTab] = useState(1);
+  const [user, setUser] = useState(null);
+
+     const handleLogout = async () => {
+      await logSheet({
+     CreatorName: user.fullName,
+     CreatorUserName: user.userId,
+     LogoutTime: new Date().toISOString()
+   });
+     setUser(null);
+   };
+
+  if (!user) return <Login onLogin={setUser} />;
 
   return (
-    <Container>
-      <h1 className="mt-3">React CMS</h1>
-      <TabManager onTabChange={setCurrentTab} />
-      <div className="mt-3">
-        <h4>Currently Active Tab: {currentTab}</h4>
-        {/* Later, we'll render TabContent here */}
-      </div>
+    <Container className="text-center mt-4">
+      <h1>Welcome, {user.fullName}</h1>
+      <button onClick={handleLogout} className="btn btn-outline-danger mb-3">
+        Logout
+      </button>
+      <TabManager />
     </Container>
   );
 }
