@@ -111,22 +111,37 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
     <div
       className={`p-3 mb-3 border rounded ${isNew ? "border border-danger" : "border border-secondary"}`}
       style={{
-        borderColor: isNew ? "#ee4c0c" : "#070606ff",
+        borderColor: isNew ? "#BFC5F1" : "#070606ff",
         borderWidth: isNew ? 3 : 1,
         backgroundColor: isNew
           ? "#fff9db"
           : isAlternate
-          ? "#f36506ff"
+          ? "#BFC5F1"
           : "white",
         transition: "background-color 0.5s ease",
       }}
     >
-      <div className="mb-2 fw-bold text-muted small">Cell {cellIndex + 1}: ACTIVE</div>
-      <Form.Group className="mb-2">
+      <div className="mb-2 fw-bold text-muted small" 
+      style={{
+          fontFamily: 'Spline Sans, sans-serif',
+          color: '#000',         
+          letterSpacing: '0.5px',   
+          
+        }}
+        >Cell {cellIndex + 1}: ACTIVE</div>
+      <Form.Group className="mb-2" 
+           style={{
+          fontFamily: 'Spline Sans, sans-serif',
+          color: '#000',         
+          letterSpacing: '0.5px',   
+          
+        }}
+      
+      >
         <Form.Control
           as="textarea"
           rows={3}
-          placeholder="Paste context here..."
+          placeholder="Context.."
           value={context}
           onChange={(e) => setContext(e.target.value)}
         />
@@ -144,11 +159,17 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
           {copied ? "Copied" : "Copy"}
         </Button>
 
-        <Form.Control
+        <Form.Control 
+        style={{
+          fontFamily: 'Spline Sans, sans-serif',
+          color: '#000',         
+          letterSpacing: '0.5px',   
+          
+        }}
           ref={outputRef}
           as="textarea"
           rows={3}
-          placeholder={loading ? `⏳ Generating… (${elapsed}s)` : "Output will appear here…"}
+          placeholder={loading ? `⏳ Generating… (${elapsed}s)` : "Output.."}
           value={output}
           readOnly
           disabled={loading}
@@ -158,7 +179,16 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
       <Row className="align-items-center">
         <Col>
           {/* Model dropdown */}
-          <Form.Select value={model} onChange={(e) => setModel(e.target.value)}>
+          <Form.Select 
+          style={{
+          fontFamily: 'Spline Sans, sans-serif',
+          color: '#000', 
+          fontWeight:"bold",
+          fontSize: "0.9rem",        
+          letterSpacing: '0.9px',   
+          
+        }}
+          value={model} onChange={(e) => setModel(e.target.value)}>
             {models.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
@@ -168,7 +198,17 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
         </Col>
         <Col>
           {/* Prompt dropdown */}
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2" 
+          
+          style={{
+          fontFamily: 'Spline Sans, sans-serif',
+          color: '#000', 
+          fontWeight:"bold",
+          fontSize: "0.9rem",        
+          letterSpacing: '0.9px',   
+          
+        }}
+          >
             <Form.Select
               value={isCustomPrompt ? '__CUSTOM__' : prompt}
               onChange={handlePromptChange}
@@ -197,7 +237,7 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
           </div>
         </Col>
         <Col xs="auto">
-          <Button variant="danger" onClick={runAI} disabled={loading}>
+          <Button variant="success" onClick={runAI} disabled={loading}  style={{ backgroundColor: '#4D4ACD', borderColor: '#4D4ACD' }}>
             {loading ? (
               <>
                 <Spinner
