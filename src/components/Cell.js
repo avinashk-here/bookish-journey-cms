@@ -44,7 +44,7 @@ export default function Cell({ isNew, isAlternate, cellIndex }) {
     timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
 
     try {
-      const res = await fetch("/api/generate", {
+      const res = await fetch("${process.env.REACT_APP_API_URL}/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model, prompt, context }),
