@@ -24,7 +24,8 @@ function App() {
   return (
     <Container className="text-center mt-4">
       
-      <TabManager user={user} />
+    <TabManager user={user} onLogout={handleLogout} />
+
 
     </Container>
   );

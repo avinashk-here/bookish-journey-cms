@@ -29,10 +29,11 @@ app.post('/api/generate', async (req, res) => {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     };
+    const maxTokens = modelStr.includes('gpt-4-turbo') ? 4096 : 10000;
     payload = {
       model: model,                    // already the real ID
       messages: [{ role: 'user', content: `${prompt}\n\n${context}` }],
-      max_completion_tokens: 10000,     // fixes parameter error
+      max_completion_tokens: maxTokens,     // fixes parameter error
      
     };
 

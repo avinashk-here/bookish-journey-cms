@@ -1,57 +1,106 @@
 // src/components/TabManager.js
 import React, { useState } from "react";
-import Cell from "./Cell";              // NEW import
-// Tabs, Tab imports removed – we’re not using them any more
+import Cell from "./Cell";
+import models from "../data/models.json";
+import prompts from "../data/prompts.json";
 
-export default function TabManager({user}) {
-  // Each tab now owns its own cells
+export default function TabManager({ user, onLogout }) {
+  /* 1. Each cell now owns its full state */
   const [tabs, setTabs] = useState([
-    { id: 1, title: "Tab 1", cells: [{ cellId: Date.now() }] }
+    {
+      id: 1,
+      title: "Tab 1",
+      cells: [
+        {
+          cellId: Date.now(),
+          context: "",
+          model: models[0].value,
+          prompt: prompts[0].value,
+          output: "",
+          loading: false,
+        },
+      ],
+    },
   ]);
   const [activeTab, setActiveTab] = useState(1);
 
-  /* ---------- helpers ---------- */
+  /* 2. Update any key inside a cell */
+  const updateCell = (tabId, cellId, patch) =>
+    setTabs((prev) =>
+      prev.map((tab) =>
+        tab.id === tabId
+          ? {
+              ...tab,
+              cells: tab.cells.map((c) =>
+                c.cellId === cellId ? { ...c, ...patch } : c
+              ),
+            }
+          : tab
+      )
+    );
+
+  /* 3. Add a new tab with one empty cell */
   const addTab = () => {
     const newId = Date.now();
-    setTabs([...tabs, { id: newId, title: `Tab ${tabs.length + 1}`, cells: [{ cellId: Date.now() }] }]);
+    const freshCell = {
+      cellId: Date.now(),
+      context: "",
+      model: models[0].value,
+      prompt: prompts[0].value,
+      output: "",
+      loading: false,
+    };
+    setTabs((prev) => [
+      ...prev,
+      { id: newId, title: `Tab ${prev.length + 1}`, cells: [freshCell] },
+    ]);
     setActiveTab(newId);
   };
 
+  /* 4. Close a tab */
   const closeTab = (idToClose) => {
     if (tabs.length === 1) return;
-    const newTabs = tabs.filter(t => t.id !== idToClose);
+    const newTabs = tabs.filter((t) => t.id !== idToClose);
     setTabs(newTabs);
     if (idToClose === activeTab) {
       setActiveTab(newTabs[newTabs.length - 1].id);
     }
   };
 
+  /* 5. Add an extra cell to the active tab */
   const addCell = (tabId) => {
-    setTabs(tabs =>
-      tabs.map(tab =>
+    const freshCell = {
+      cellId: Date.now(),
+      context: "",
+      model: models[0].value,
+      prompt: prompts[0].value,
+      output: "",
+      loading: false,
+    };
+    setTabs((prev) =>
+      prev.map((tab) =>
         tab.id === tabId
-          ? { ...tab, cells: [...tab.cells, { cellId: Date.now() }] }
+          ? { ...tab, cells: [...tab.cells, freshCell] }
           : tab
       )
     );
   };
 
-  /* ---------- render ---------- */
-  const active = tabs.find(t => t.id === activeTab);
+  const active = tabs.find((t) => t.id === activeTab);
 
   return (
     <div className="d-flex vh-100">
-      {/* Main content area */}
+      {/* Main content */}
       <div className="flex-grow-1 p-3" style={{ marginRight: 220 }}>
-        {active.cells.map((c, idx) => (
+        {active?.cells.map((c, idx) => (
           <Cell
             key={c.cellId}
-            isNew={false}
+            data={c}
+            onChange={(patch) => updateCell(active.id, c.cellId, patch)}
             isAlternate={idx % 2 === 1}
             cellIndex={idx}
           />
         ))}
-
         <button
           className="btn btn-outline-primary mt-2"
           onClick={() => addCell(active.id)}
@@ -60,25 +109,26 @@ export default function TabManager({user}) {
         </button>
       </div>
 
-      {/* Right vertical tab list (unchanged look) */}
+      {/* Right tab bar */}
       <div
         className="d-flex flex-column bg-light border-start p-2"
-        style={{ width: 240,
-          position: 'fixed',
+        style={{
+          width: 240,
+          position: "fixed",
           top: 0,
           right: 0,
-          height: '100vh',
-          overflowY: 'auto'
-         }}
+          height: "100vh",
+          overflowY: "auto",
+        }}
       >
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <div
             key={tab.id}
             className="tab-card d-flex justify-content-between align-items-center mb-2 p-2"
             style={{
               cursor: "pointer",
               backgroundColor: activeTab === tab.id ? "#4D4ACD" : "",
-              color: activeTab === tab.id ? "#fff" : "#000"
+              color: activeTab === tab.id ? "#fff" : "#000",
             }}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -89,9 +139,9 @@ export default function TabManager({user}) {
                   cursor: "pointer",
                   fontSize: 16,
                   fontWeight: "bold",
-                  color: activeTab === tab.id ? "#fff" : "#6b6b6bff"
+                  color: activeTab === tab.id ? "#fff" : "#6b6b6bff",
                 }}
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
                   closeTab(tab.id);
                 }}
@@ -109,28 +159,30 @@ export default function TabManager({user}) {
           +
         </div>
 
-        {/* 3. Spacer pushes greeting & logout to bottom */}
-       <div className="flex-grow-1" />
-
-       {/* 4. Greeting & Logout */}
-       <div className="text-center small mb-1 mt-auto" 
-            style={{ color: "#000", fontSize: "0.9rem", fontFamily: "Spline Sans, sans-serif" }}>
-         {/* Assuming user.fullName is available */}
-         Hi, {user?.fullName || 'Guest'}
-       </div>
-       <button
+        <div className="flex-grow-1" />
+        <div
+          className="text-center small mb-1 mt-auto"
+          style={{
+            color: "#000",
+            fontSize: "0.9rem",
+            fontFamily: "Spline Sans, sans-serif",
+          }}
+        >
+          Hi, {user?.fullName || "Guest"}
+        </div>
+        <button
           className="btn btn-sm w-100"
           style={{
-            color: '#fff',
-            backgroundColor: '#000',
-            border: '1px solid #000',
-            fontFamily: 'Spline Sans, sans-serif',
-            cursor: 'pointer'
+            color: "#fff",
+            backgroundColor: "#000",
+            border: "1px solid #000",
+            fontFamily: "Spline Sans, sans-serif",
+            cursor: "pointer",
           }}
-          onClick={() => alert('Logout clicked!')}
+          onClick={onLogout}
         >
           Logout
-      </button>
+        </button>
       </div>
     </div>
   );
