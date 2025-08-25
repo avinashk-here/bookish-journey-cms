@@ -10,19 +10,28 @@ export default function Cell({
   isAlternate,
   cellIndex,
 }) {
-  // Destructure controlled state from parent
-  const { context, output, model, prompt, loading } = data;
+  /* Destructure controlled state */
+  const {
+    context,
+    output,
+    model,
+    prompt,
+    loading,
+    isCustomPrompt,
+    savedPrompts,
+  } = data;
 
-  // Helper setters that notify the parent
+  /* Utility setters */
   const setContext = (v) => onChange({ context: v });
   const setOutput  = (v) => onChange({ output: v });
   const setModel   = (v) => onChange({ model: v });
   const setPrompt  = (v) => onChange({ prompt: v });
   const setLoading = (v) => onChange({ loading: v });
+  const set        = (patch) => onChange(patch);
 
-  const outputRef = useRef(null);
+  const outputRef = useRef();
 
-  /* ---------- API call ---------- */
+  /* API call */
   const runAI = async () => {
     setLoading(true);
     try {
@@ -36,7 +45,6 @@ export default function Cell({
       );
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-
       const content = data.choices?.[0]?.message?.content || data.content || "";
       const cites = Array.isArray(data.citations) ? data.citations.filter(Boolean) : [];
       setOutput(content + (cites.length ? `\n\n**Citations**:\n${cites.join("\n")}` : ""));
@@ -47,41 +55,40 @@ export default function Cell({
     }
   };
 
-  /* ---------- Copy ---------- */
-  const copyOutput = () => {
-    if (outputRef.current) {
-      navigator.clipboard.writeText(outputRef.current.value);
-    }
-  };
-
-  /* ---------- Prompt dropdown ---------- */
+  /* Prompt helpers */
   const handlePromptChange = (e) => {
     const val = e.target.value;
     if (val === "__CUSTOM__") {
-      setPrompt("");
+      set({ prompt: "", isCustomPrompt: true });
     } else {
-      setPrompt(val);
+      set({ prompt: val, isCustomPrompt: false });
     }
   };
 
+  const handleCustomPromptChange = (e) => set({ prompt: e.target.value });
+
+  const savePrompt = () => {
+    const trimmed = prompt.trim();
+    if (!trimmed || savedPrompts.includes(trimmed)) return;
+    const next = [...savedPrompts, trimmed];
+    localStorage.setItem("savedPrompts", JSON.stringify(next));
+    set({ savedPrompts: next, isCustomPrompt: false });
+  };
+
+  /* Render */
   return (
     <div
       className="p-3 mb-3 border rounded"
       style={{
-        borderColor: "#070606ff",
         borderWidth: 1,
         backgroundColor: isAlternate ? "#BFC5F1" : "white",
         transition: "background-color 0.5s ease",
       }}
     >
-      <div
-        className="mb-2 fw-bold small"
-        style={{ fontFamily: "Spline Sans", color: "#000", letterSpacing: "0.5px" }}
-      >
+      <div className="mb-2 fw-bold small">
         Cell {cellIndex + 1}: ACTIVE
       </div>
 
-      {/* Context */}
       <Form.Group className="mb-2">
         <Form.Control
           as="textarea"
@@ -92,12 +99,11 @@ export default function Cell({
         />
       </Form.Group>
 
-      {/* Output */}
       <Form.Group className="mb-3 position-relative">
         <Button
           size="sm"
           variant="outline-secondary"
-          onClick={copyOutput}
+          onClick={() => navigator.clipboard.writeText(output)}
           className="position-absolute"
           style={{ top: 4, right: 4, zIndex: 2 }}
         >
@@ -116,11 +122,7 @@ export default function Cell({
 
       <Row className="align-items-center">
         <Col>
-          <Form.Select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            style={{ fontFamily: "Spline Sans", fontWeight: "bold" }}
-          >
+          <Form.Select value={model} onChange={(e) => setModel(e.target.value)}>
             {models.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
@@ -130,20 +132,37 @@ export default function Cell({
         </Col>
 
         <Col>
-          <Form.Select
-            value={prompt}
-            onChange={handlePromptChange}
-            style={{ fontFamily: "Spline Sans", fontWeight: "bold" }}
-          >
-            {prompts.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </Form.Select>
+          <div className="d-flex gap-2">
+            <Form.Select
+              value={isCustomPrompt ? "__CUSTOM__" : prompt}
+              onChange={handlePromptChange}
+            >
+              {prompts.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+              {savedPrompts.map((sp, idx) => (
+                <option key={idx} value={sp}>
+                  {sp}
+                </option>
+              ))}
+              <option value="__CUSTOM__">+ Custom prompt</option>
+            </Form.Select>
+
+            {isCustomPrompt && (
+              <Form.Control
+                as="textarea"
+                rows={1}
+                placeholder="Type custom prompt…"
+                value={prompt}
+                onChange={handleCustomPromptChange}
+              />
+            )}
+          </div>
         </Col>
 
-        <Col xs="auto">
+        <Col xs="auto" className="d-flex gap-2">
           <Button
             variant="success"
             onClick={runAI}
@@ -166,6 +185,12 @@ export default function Cell({
               "Run"
             )}
           </Button>
+
+          {isCustomPrompt && prompt.trim() && (
+            <Button variant="outline-secondary" onClick={savePrompt}>
+              Save
+            </Button>
+          )}
         </Col>
       </Row>
     </div>

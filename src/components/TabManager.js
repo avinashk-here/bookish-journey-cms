@@ -5,26 +5,22 @@ import models from "../data/models.json";
 import prompts from "../data/prompts.json";
 
 export default function TabManager({ user, onLogout }) {
-  /* 1. Each cell now owns its full state */
+  const makeCell = () => ({
+    cellId: Date.now(),
+    context: "",
+    model: models[0].value,
+    prompt: prompts[0].value,
+    output: "",
+    loading: false,
+    isCustomPrompt: false,
+    savedPrompts: JSON.parse(localStorage.getItem("savedPrompts") || "[]"),
+  });
+
   const [tabs, setTabs] = useState([
-    {
-      id: 1,
-      title: "Tab 1",
-      cells: [
-        {
-          cellId: Date.now(),
-          context: "",
-          model: models[0].value,
-          prompt: prompts[0].value,
-          output: "",
-          loading: false,
-        },
-      ],
-    },
+    { id: 1, title: "Tab 1", cells: [makeCell()] },
   ]);
   const [activeTab, setActiveTab] = useState(1);
 
-  /* 2. Update any key inside a cell */
   const updateCell = (tabId, cellId, patch) =>
     setTabs((prev) =>
       prev.map((tab) =>
@@ -39,25 +35,15 @@ export default function TabManager({ user, onLogout }) {
       )
     );
 
-  /* 3. Add a new tab with one empty cell */
   const addTab = () => {
     const newId = Date.now();
-    const freshCell = {
-      cellId: Date.now(),
-      context: "",
-      model: models[0].value,
-      prompt: prompts[0].value,
-      output: "",
-      loading: false,
-    };
     setTabs((prev) => [
       ...prev,
-      { id: newId, title: `Tab ${prev.length + 1}`, cells: [freshCell] },
+      { id: newId, title: `Tab ${prev.length + 1}`, cells: [makeCell()] },
     ]);
     setActiveTab(newId);
   };
 
-  /* 4. Close a tab */
   const closeTab = (idToClose) => {
     if (tabs.length === 1) return;
     const newTabs = tabs.filter((t) => t.id !== idToClose);
@@ -67,20 +53,11 @@ export default function TabManager({ user, onLogout }) {
     }
   };
 
-  /* 5. Add an extra cell to the active tab */
   const addCell = (tabId) => {
-    const freshCell = {
-      cellId: Date.now(),
-      context: "",
-      model: models[0].value,
-      prompt: prompts[0].value,
-      output: "",
-      loading: false,
-    };
     setTabs((prev) =>
       prev.map((tab) =>
         tab.id === tabId
-          ? { ...tab, cells: [...tab.cells, freshCell] }
+          ? { ...tab, cells: [...tab.cells, makeCell()] }
           : tab
       )
     );
@@ -90,7 +67,6 @@ export default function TabManager({ user, onLogout }) {
 
   return (
     <div className="d-flex vh-100">
-      {/* Main content */}
       <div className="flex-grow-1 p-3" style={{ marginRight: 220 }}>
         {active?.cells.map((c, idx) => (
           <Cell
@@ -109,7 +85,6 @@ export default function TabManager({ user, onLogout }) {
         </button>
       </div>
 
-      {/* Right tab bar */}
       <div
         className="d-flex flex-column bg-light border-start p-2"
         style={{
